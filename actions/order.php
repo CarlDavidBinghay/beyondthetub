@@ -41,7 +41,11 @@ $payRef    = $val('payment_reference');
 $errors = [];
 
 if (!is_production_date($date))                    $errors[] = 'That production date is no longer open.';
-if (!in_array($slot, TIME_SLOTS, true))            $errors[] = 'Pick a handover window.';
+if (!is_time_slot($slot))                          $errors[] = 'Pick a handover window.';
+// Someone may have taken the last place while this person was filling the form in.
+if (is_time_slot($slot) && is_production_date($date) && slot_left($date, $slot) <= 0) {
+    $errors[] = 'That window just filled up — go back and pick another one.';
+}
 if ($name === '')                                  $errors[] = 'We need a name.';
 if (strlen(preg_replace('/\D/', '', $phone)) < 7)  $errors[] = 'That mobile number looks wrong.';
 // Email is optional now — only complain if they typed something that isn't an email.
@@ -66,7 +70,7 @@ if ($needsAddress) {
 }
 
 if ($needsProof) {
-    if (strlen($payRef) < 4)                                    $errors[] = 'Add the payment reference number.';
+    // Reference number is optional — the screenshot is the real proof.
     if (($_FILES['proof']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         $errors[] = 'Attach a screenshot of your payment.';
     }
@@ -170,10 +174,30 @@ if (!save_order($order)) {
     exit;
 }
 
-push_to_google_form($order);
-notify_new_order($order);
-
 cart_clear();
 $_SESSION['last_order'] = $reference;
 
-echo json_encode(['reference' => $reference, 'redirect' => 'confirmation.php?ref=' . $reference]);
+// Answer the customer NOW — their order is saved, so confirm it instantly.
+// Anything slow (email, Google Form) happens after, where it cannot stall checkout.
+$payload = json_encode(['reference' => $reference, 'redirect' => 'confirmation.php?ref=' . $reference]);
+echo $payload;
+
+// Flush the response so the browser redirects immediately, then keep working.
+if (function_exists('fastcgi_finish_request')) {
+    session_write_close();
+    fastcgi_finish_request();
+} else {
+    // Apache/mod_php: close the connection by declaring the length, then flush.
+    ignore_user_abort(true);
+    header('Connection: close');
+    header('Content-Length: ' . strlen($payload));
+    while (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    flush();
+    session_write_close();
+}
+
+// The customer is already on the confirmation page by now.
+try { push_to_google_form($order); } catch (\Throwable $e) {}
+try { notify_new_order($order); }   catch (\Throwable $e) {}

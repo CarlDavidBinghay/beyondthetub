@@ -74,6 +74,86 @@ $totalStock = array_sum(LAUNCH_STOCK);
   </div>
 </section>
 
+<!-- Dates — information only, nothing to click here -->
+<section id="dates" class="border-b-2 border-ink bg-white/50">
+  <div class="mx-auto max-w-6xl px-5 py-14">
+    <?php
+    $preorderDates = preorder_dates();
+    $deliveryDates = production_dates();
+    $slotCounts    = slot_counts();
+    ?>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+
+      <!-- Pre-order window: when you can order -->
+      <div class="rounded-3xl border-2 border-ink bg-cream p-6 md:p-8">
+        <p class="font-mono text-xs uppercase tracking-widest text-cocoa">When you can order</p>
+        <h2 class="mt-1 font-display text-2xl font-bold">Pre-order dates</h2>
+
+        <?php if (!$preorderDates): ?>
+          <p class="mt-4 rounded-2xl border-2 border-dashed border-line bg-white px-5 py-6 text-center text-sm text-cocoa">
+            Pre-orders are closed. Follow
+            <a href="<?= e(SHOP['ig_url']) ?>" target="_blank" rel="noopener" class="underline decoration-green decoration-2 underline-offset-4">@<?= e(SHOP['instagram']) ?></a>
+            — the next window goes up there first.
+          </p>
+        <?php else: ?>
+          <p class="mt-1 text-sm text-cocoa">
+            <?= preorder_open_today()
+                ? 'Ordering is open today. Get your tubs in before the batch fills.'
+                : 'These are the days we take orders.' ?>
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <?php foreach ($preorderDates as $d): ?>
+              <span class="rounded-2xl border-2 border-ink bg-gold/40 px-4 py-2.5 text-center">
+                <span class="block font-mono text-[10px] uppercase tracking-widest text-cocoa"><?= e($d['weekday']) ?></span>
+                <span class="block font-display text-xl font-bold leading-tight"><?= e($d['day']) ?> <?= e($d['month']) ?></span>
+              </span>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- Delivery dates: when you get it -->
+      <div class="rounded-3xl border-2 border-ink bg-cream p-6 md:p-8">
+        <p class="font-mono text-xs uppercase tracking-widest text-cocoa">When you get your tubs</p>
+        <h2 class="mt-1 font-display text-2xl font-bold">Delivery dates</h2>
+
+        <?php if (!$deliveryDates): ?>
+          <p class="mt-4 rounded-2xl border-2 border-dashed border-line bg-white px-5 py-6 text-center text-sm text-cocoa">
+            No delivery dates open yet. Nothing to book until we schedule the next batch.
+          </p>
+        <?php else: ?>
+          <p class="mt-1 text-sm text-cocoa">You pick one of these at checkout.</p>
+          <div class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            <?php foreach ($deliveryDates as $d):
+              $left = date_places_left($d['value'], $slotCounts);
+              $full = $left === 0;
+            ?>
+              <div class="rounded-2xl border-2 <?= $full ? 'border-line bg-white opacity-50' : 'border-ink bg-white' ?> px-2 py-3 text-center">
+                <p class="font-mono text-[10px] uppercase tracking-widest text-cocoa"><?= e($d['weekday']) ?></p>
+                <p class="font-display text-2xl font-bold leading-tight"><?= e($d['day']) ?></p>
+                <p class="font-mono text-[10px] uppercase tracking-widest text-cocoa"><?= e($d['month']) ?></p>
+                <p class="mt-1 font-mono text-[10px] <?= $full ? 'text-jam' : 'text-cocoa' ?>">
+                  <?= $full ? 'full' : $left . ' left' ?>
+                </p>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <p class="mt-3 font-mono text-[11px] text-cocoa">
+            Each 30-minute window takes <?= SLOT_CAPACITY ?> orders.
+          </p>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <?php if ($deliveryDates): ?>
+      <div class="mt-6 text-center">
+        <a href="#menu" class="inline-block rounded-full border-2 border-ink bg-green px-7 py-3.5 font-semibold text-white hover:bg-greendk">Start your order</a>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
+
 <!-- Menu -->
 <section id="menu" class="mx-auto max-w-6xl px-5 py-16">
   <div class="flex flex-wrap items-end justify-between gap-4">

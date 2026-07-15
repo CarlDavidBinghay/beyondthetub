@@ -100,6 +100,68 @@ chmod -R 777 .</pre>
     </tbody>
   </table>
 
+  <!-- What the date files actually contain -->
+  <?php
+  $dateFiles = [
+      'Delivery dates'  => ['path' => DATES_FILE,    'reader' => 'production_dates'],
+      'Pre-order dates' => ['path' => PREORDER_FILE, 'reader' => 'preorder_dates'],
+  ];
+  ?>
+  <div class="mt-8 rounded-3xl border-2 border-ink bg-white p-6">
+    <h2 class="font-display text-2xl font-bold">Date files</h2>
+    <p class="mt-1 text-sm text-cocoa">
+      Left is the raw file on disk. Right is what the site reads back from it. If they disagree, that is the bug.
+    </p>
+
+    <div class="mt-5 space-y-5">
+      <?php foreach ($dateFiles as $label => $info):
+        $exists = is_file($info['path']);
+        $raw    = $exists ? trim((string)file_get_contents($info['path'])) : '';
+        $read   = $info['reader']();
+      ?>
+        <div class="rounded-2xl border-2 border-line p-4">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="font-display text-lg font-bold"><?= e($label) ?></p>
+            <p class="font-mono text-xs <?= $exists ? 'text-cocoa' : 'text-jam' ?>">
+              <?= $exists ? basename($info['path']) . ' · ' . strlen($raw) . ' bytes' : 'file does not exist yet' ?>
+            </p>
+          </div>
+
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-widest text-cocoa">On disk</p>
+              <pre class="mt-1 overflow-x-auto rounded-xl border-2 border-line bg-cream p-3 font-mono text-xs"><?= $exists ? e($raw) : '—' ?></pre>
+            </div>
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-widest text-cocoa">Site shows</p>
+              <?php if (!$read): ?>
+                <p class="mt-1 rounded-xl border-2 border-jam bg-white p-3 font-mono text-xs text-jam">nothing — no dates offered</p>
+              <?php else: ?>
+                <ul class="mt-1 space-y-1 rounded-xl border-2 border-line bg-cream p-3 font-mono text-xs">
+                  <?php foreach ($read as $d): ?>
+                    <li><?= e($d['value']) ?> · <?= e($d['label']) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <?php if ($exists && $raw === '[]'): ?>
+            <p class="mt-3 rounded-xl border-2 border-jam px-3 py-2 text-xs text-jam">
+              The file is an empty list. The save worked, but nothing you typed was read as a date —
+              so the list was emptied. Check what you typed.
+            </p>
+          <?php elseif ($exists && $raw && !$read): ?>
+            <p class="mt-3 rounded-xl border-2 border-jam px-3 py-2 text-xs text-jam">
+              The file has dates in it but the site shows none — they are all in the past. Only future dates are offered.
+              Today is <?= date('Y-m-d') ?>.
+            </p>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+
   <div class="mt-6 rounded-2xl border-2 border-line bg-white p-5 text-sm">
     <p class="font-mono text-xs uppercase tracking-widest text-cocoa">Also worth knowing</p>
     <ul class="mt-2 space-y-1 text-cocoa">

@@ -184,92 +184,171 @@ function delivery_fee(string $method): float
 
 /* -------------------------------------------------- production dates */
 
+/* -------------------------------------------------- dates (two lists) */
+
 /**
- * Dates the kitchen cooks on. Editable from admin.php.
+ * There are two date lists, and they mean different things:
  *
- * If storage/production-dates.json exists, it is the law — even when empty
- * (an empty list means ordering is closed). Only when the file has never been
- * written do we fall back to offering the next open days automatically.
+ *   DELIVERY dates  (DATES_FILE)    — customers pick one at checkout.
+ *   PRE-ORDER dates (PREORDER_FILE) — when ordering is open. Shown on the site,
+ *                                     never clickable. You announce them.
+ *
+ * Both are edited in admin.php and stored as plain lists of YYYY-MM-DD.
  */
-function production_dates(): array
+
+/** Read a date list from disk: future dates only, sorted, as date cards. */
+function load_dates(string $path): array
 {
-    if (is_file(DATES_FILE)) {
-        $saved = json_decode((string)file_get_contents(DATES_FILE), true);
-        if (is_array($saved)) {
-            $today = date('Y-m-d');
-            $saved = array_values(array_filter($saved, fn($d) => is_string($d) && $d >= $today));
-            sort($saved);
-            return array_map('date_card', $saved);
-        }
+    if (!is_file($path)) {
+        return [];
     }
-
-    // Never configured — offer the next open days.
-    $dates = [];
-    $start = (new DateTimeImmutable('+' . LEAD_TIME_HOURS . ' hours'))->setTime(0, 0);
-    for ($i = 0; count($dates) < AUTO_DATE_DAYS && $i < 30; $i++) {
-        $day = $start->modify("+$i days");
-        if (in_array((int)$day->format('w'), CLOSED_WEEKDAYS, true)) {
-            continue;
-        }
-        $dates[] = date_card($day->format('Y-m-d'));
+    $saved = json_decode((string)file_get_contents($path), true);
+    if (!is_array($saved)) {
+        return [];
     }
-    return $dates;
-}
-
-/** True when the shop is running on hand-picked dates rather than automatic ones. */
-function production_dates_are_manual(): bool
-{
-    return is_file(DATES_FILE);
-}
-
-/** Hand control back to the automatic date list. */
-function production_dates_reset(): bool
-{
-    return !is_file(DATES_FILE) || @unlink(DATES_FILE);
+    $today = date('Y-m-d');
+    $saved = array_values(array_filter($saved, fn($d) => is_string($d) && $d >= $today));
+    sort($saved);
+    return array_map('date_card', $saved);
 }
 
 /**
- * Accepts whatever the user typed — 2026-08-03, 2026-8-3, 03/08/2026, "Aug 3 2026" —
- * and reports exactly what it did, so nothing can vanish quietly again.
+ * Write a date list, saying exactly what happened rather than failing quietly.
  *
  * @return array{saved: string[], past: string[], ignored: string[], written: bool}
  */
-function production_dates_save(array $input): array
+function save_dates(string $path, array $input): array
 {
     $saved = $past = $ignored = [];
     $today = date('Y-m-d');
 
     foreach ($input as $raw) {
-        $raw = trim((string)$raw);
-        if ($raw === '') {
-            continue;
-        }
-        $normalised = normalise_date($raw);
-        if ($normalised === null) {
-            $ignored[] = $raw;          // we could not read it at all
-        } elseif ($normalised < $today) {
-            $past[] = $normalised;      // readable, but already gone
-        } else {
-            $saved[] = $normalised;
+        foreach (split_date_chunk((string)$raw) as $chunk) {
+            $normalised = normalise_date($chunk);
+            if ($normalised === null) {
+                $ignored[] = $chunk;
+            } elseif ($normalised < $today) {
+                $past[] = $normalised;
+            } else {
+                $saved[] = $normalised;
+            }
         }
     }
 
     $saved = array_values(array_unique($saved));
     sort($saved);
 
-    if (!is_dir(dirname(DATES_FILE))) {
-        @mkdir(dirname(DATES_FILE), 0777, true);
-        @chmod(dirname(DATES_FILE), 0777);
+    if (!is_dir(dirname($path))) {
+        @mkdir(dirname($path), 0777, true);
+        @chmod(dirname($path), 0777);
     }
-    $written = @file_put_contents(DATES_FILE, json_encode($saved, JSON_PRETTY_PRINT)) !== false;
+    $written = @file_put_contents($path, json_encode($saved, JSON_PRETTY_PRINT)) !== false;
 
     return ['saved' => $saved, 'past' => $past, 'ignored' => $ignored, 'written' => $written];
+}
+
+/* ---- Delivery dates: the ones customers actually choose at checkout ---- */
+
+function production_dates(): array
+{
+    $dates = load_dates(DATES_FILE);
+    if ($dates || is_file(DATES_FILE)) {
+        return $dates;               // your list is the law, even when it is empty
+    }
+
+    // Nothing ever set. Unless you asked for automatic dates, that means closed.
+    if (!AUTO_DATES) {
+        return [];
+    }
+
+    $auto  = [];
+    $start = (new DateTimeImmutable('+' . LEAD_TIME_HOURS . ' hours'))->setTime(0, 0);
+    for ($i = 0; count($auto) < AUTO_DATE_DAYS && $i < 30; $i++) {
+        $day = $start->modify("+$i days");
+        if (in_array((int)$day->format('w'), CLOSED_WEEKDAYS, true)) {
+            continue;
+        }
+        $auto[] = date_card($day->format('Y-m-d'));
+    }
+    return $auto;
+}
+
+function production_dates_are_manual(): bool
+{
+    return is_file(DATES_FILE);
+}
+
+function production_dates_reset(): bool
+{
+    return !is_file(DATES_FILE) || @unlink(DATES_FILE);
+}
+
+function production_dates_save(array $input): array
+{
+    return save_dates(DATES_FILE, $input);
+}
+
+function is_production_date(string $value): bool
+{
+    foreach (production_dates() as $d) {
+        if ($d['value'] === $value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* ---- Pre-order dates: announced on the site, never clickable ---- */
+
+function preorder_dates(): array
+{
+    return load_dates(PREORDER_FILE);
+}
+
+function preorder_dates_save(array $input): array
+{
+    return save_dates(PREORDER_FILE, $input);
+}
+
+/** Is today one of the pre-order days? Used only to word the notice on the site. */
+function preorder_open_today(): bool
+{
+    $today = date('Y-m-d');
+    foreach (preorder_dates() as $d) {
+        if ($d['value'] === $today) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * One line of typed input may hold one date or several.
+ * "2026-08-05 2026-08-06" is two dates; "Aug 3 2026" is one. So we try the
+ * whole line first, and only break it on spaces if that fails.
+ */
+function split_date_chunk(string $raw): array
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return [];
+    }
+    if (normalise_date($raw) !== null) {
+        return [$raw];                        // reads fine as it stands
+    }
+    $parts = preg_split('/\s+/', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    return count($parts) > 1 ? $parts : [$raw];
 }
 
 /** Turn almost any way of writing a date into YYYY-MM-DD, or null if it is nonsense. */
 function normalise_date(string $raw): ?string
 {
     $raw = trim($raw);
+
+    // Too short to be a date — almost always a half-typed fragment.
+    if (strlen($raw) < 6) {
+        return null;
+    }
 
     // Day-first formats, which strtotime would read the American way round.
     foreach (['d/m/Y', 'd-m-Y', 'j/n/Y', 'j-n-Y'] as $format) {
@@ -284,10 +363,9 @@ function normalise_date(string $raw): ?string
     if ($stamp === false) {
         return null;
     }
-    $out = date('Y-m-d', $stamp);
 
     // strtotime happily reads "hello" as today. Demand a digit as proof of intent.
-    return preg_match('/\d/', $raw) ? $out : null;
+    return preg_match('/\d/', $raw) ? date('Y-m-d', $stamp) : null;
 }
 
 function date_card(string $value): array
@@ -302,20 +380,69 @@ function date_card(string $value): array
     ];
 }
 
-function is_production_date(string $value): bool
-{
-    foreach (production_dates() as $d) {
-        if ($d['value'] === $value) {
-            return true;
-        }
-    }
-    return false;
-}
-
 function pretty_date(string $value): string
 {
     $d = DateTimeImmutable::createFromFormat('Y-m-d', $value);
     return $d ? $d->format('l, j F Y') : $value;
+}
+
+/* ------------------------------------------------------------------- slots */
+
+function time_slots(): array
+{
+    return TIME_SLOTS;
+}
+
+function is_time_slot(string $slot): bool
+{
+    return in_array($slot, TIME_SLOTS, true);
+}
+
+/** How many orders are already booked into each date + window. */
+function slot_counts(): array
+{
+    $counts = [];
+    foreach (all_orders() as $o) {
+        $key = ($o['schedule']['date'] ?? '') . '|' . ($o['schedule']['slot'] ?? '');
+        $counts[$key] = ($counts[$key] ?? 0) + 1;
+    }
+    return $counts;
+}
+
+/** Places left in one window on one date. Zero means full. */
+function slot_left(string $date, string $slot, ?array $counts = null): int
+{
+    $counts ??= slot_counts();
+    return max(0, SLOT_CAPACITY - (int)($counts[$date . '|' . $slot] ?? 0));
+}
+
+/**
+ * Every open date, with how many places are left in each of its windows.
+ * The checkout hands this to the browser so windows grey out the moment they fill.
+ *
+ * @return array<string, array<string, int>>  date => [window => places left]
+ */
+function slot_availability(): array
+{
+    $counts = slot_counts();
+    $map    = [];
+    foreach (production_dates() as $d) {
+        foreach (TIME_SLOTS as $slot) {
+            $map[$d['value']][$slot] = slot_left($d['value'], $slot, $counts);
+        }
+    }
+    return $map;
+}
+
+/** Places left across a whole date — zero means the day is fully booked. */
+function date_places_left(string $date, ?array $counts = null): int
+{
+    $counts ??= slot_counts();
+    $total = 0;
+    foreach (TIME_SLOTS as $slot) {
+        $total += slot_left($date, $slot, $counts);
+    }
+    return $total;
 }
 
 /* ------------------------------------------------------------------- csrf */

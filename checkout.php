@@ -28,42 +28,52 @@ $dates = production_dates();
   <form id="checkout" class="mt-8" novalidate>
     <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
 
-    <!-- 1. Production date -->
-    <section data-panel="0" class="is-active rounded-3xl border-2 border-ink bg-white p-6 md:p-8">
-      <h2 class="font-display text-2xl font-bold">Which production date?</h2>
-      <p class="mt-1 text-sm text-cocoa">These are the days we cook. Your tubs are made fresh on the date you pick. Times in <?= e(SHOP['timezone']) ?>.</p>
+    <!-- 1. Delivery date — only the dates you opened in admin -->
+    <section data-panel="0" class="is-active rounded-3xl border-2 border-ink bg-white p-6 md:p-8"
+             data-availability='<?= e(json_encode(slot_availability())) ?>'
+             data-capacity="<?= SLOT_CAPACITY ?>">
+      <h2 class="font-display text-2xl font-bold">Pick your delivery date</h2>
+      <p class="mt-1 text-sm text-cocoa">These are the only dates we are cooking for. Times in <?= e(SHOP['timezone']) ?>.</p>
 
       <?php if (!$dates): ?>
         <p class="mt-6 rounded-2xl border-2 border-jam px-5 py-4 text-sm text-jam">
-          No production dates are open right now. Message us on Instagram and we will add one.
+          No dates are open right now. Follow us on Instagram — we post the next batch there.
         </p>
-      <?php endif; ?>
+      <?php else: ?>
+        <div class="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-5" data-dates>
+          <?php $counts = slot_counts(); ?>
+          <?php foreach ($dates as $i => $d):
+            $left = date_places_left($d['value'], $counts);
+            $full = $left === 0;
+          ?>
+            <label class="<?= $full ? 'cursor-not-allowed' : 'cursor-pointer' ?> <?= $i >= 10 ? 'hidden' : '' ?>" data-date-tile>
+              <input type="radio" name="date" value="<?= e($d['value']) ?>" class="peer sr-only" required <?= $full ? 'disabled' : '' ?>>
+              <span class="block rounded-2xl border-2 px-2 py-3 text-center <?= $full ? 'border-line opacity-40' : 'border-line peer-checked:border-ink peer-checked:bg-green peer-checked:text-white' ?>">
+                <span class="block font-mono text-[11px] uppercase opacity-70"><?= e($d['weekday']) ?></span>
+                <span class="block font-display text-2xl font-bold leading-tight"><?= e($d['day']) ?></span>
+                <span class="block font-mono text-[11px] uppercase opacity-70"><?= $full ? 'full' : e($d['month']) ?></span>
+              </span>
+            </label>
+          <?php endforeach; ?>
+        </div>
+        <?php if (count($dates) > 10): ?>
+          <button type="button" data-more-dates class="mt-3 font-mono text-xs uppercase tracking-widest text-green underline underline-offset-4">More dates</button>
+        <?php endif; ?>
 
-      <div class="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-5" data-dates>
-        <?php foreach ($dates as $i => $d): ?>
-          <label class="cursor-pointer <?= $i >= 10 ? 'hidden' : '' ?>" data-date-tile>
-            <input type="radio" name="date" value="<?= e($d['value']) ?>" class="peer sr-only" required>
-            <span class="block rounded-2xl border-2 border-line px-2 py-3 text-center peer-checked:border-ink peer-checked:bg-green peer-checked:text-white">
-              <span class="block font-mono text-[11px] uppercase opacity-70"><?= e($d['weekday']) ?></span>
-              <span class="block font-display text-2xl font-bold leading-tight"><?= e($d['day']) ?></span>
-              <span class="block font-mono text-[11px] uppercase opacity-70"><?= e($d['month']) ?></span>
-            </span>
-          </label>
-        <?php endforeach; ?>
-      </div>
-      <?php if (count($dates) > 10): ?>
-        <button type="button" data-more-dates class="mt-3 font-mono text-xs uppercase tracking-widest text-green underline underline-offset-4">More dates</button>
-      <?php endif; ?>
+        <h3 class="mt-8 font-display text-lg font-bold">Pick a handover window</h3>
+        <p class="mt-1 text-sm text-cocoa" data-slot-hint>Choose a date first — we only show windows that still have room.</p>
 
-      <h3 class="mt-8 font-display text-lg font-bold">Pick a handover window</h3>
-      <div class="mt-3 grid gap-2 sm:grid-cols-2">
-        <?php foreach (TIME_SLOTS as $slot): ?>
-          <label class="cursor-pointer">
-            <input type="radio" name="slot" value="<?= e($slot) ?>" class="peer sr-only" required>
-            <span class="block rounded-2xl border-2 border-line px-4 py-3 text-sm font-medium peer-checked:border-ink peer-checked:bg-green peer-checked:text-white"><?= e($slot) ?></span>
-          </label>
-        <?php endforeach; ?>
-      </div>
+        <div class="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-4" data-slots>
+          <?php foreach (TIME_SLOTS as $slot): ?>
+            <label class="cursor-pointer" data-slot-tile data-slot="<?= e($slot) ?>">
+              <input type="radio" name="slot" value="<?= e($slot) ?>" class="peer sr-only" required disabled>
+              <span class="block rounded-2xl border-2 border-line px-3 py-2.5 text-center peer-checked:border-ink peer-checked:bg-green peer-checked:text-white">
+                <span class="block whitespace-nowrap font-mono text-xs"><?= e($slot) ?></span>
+              </span>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </section>
 
     <!-- 2. You -->
@@ -235,7 +245,7 @@ $dates = production_dates();
       <div data-online-fields class="mt-8 hidden border-t-2 border-dashed border-line pt-6">
         <div class="grid gap-6 sm:grid-cols-[auto_1fr]">
           <div class="mx-auto w-48">
-            <img src="<?= e(ASSETS['qr']) ?>" alt="Payment QR code" class="w-full rounded-2xl border-2 border-ink bg-white p-2">
+            <img src="<?= e(ASSETS['qr']) ?>?v=<?= @filemtime(__DIR__ . '/' . ASSETS['qr']) ?: time() ?>" alt="Payment QR code" class="w-full rounded-2xl border-2 border-ink bg-white p-2">
             <p class="mt-2 text-center font-mono text-[11px] uppercase tracking-widest text-cocoa">Scan to pay</p>
           </div>
           <div>
@@ -243,7 +253,7 @@ $dates = production_dates();
             <p class="mt-1 text-sm text-cocoa">Pay the total shown on the next step, then give us the reference number and a screenshot so we can match your payment to this order.</p>
 
             <label class="mt-5 block">
-              <span class="font-mono text-xs uppercase tracking-widest text-cocoa">Reference number</span>
+              <span class="font-mono text-xs uppercase tracking-widest text-cocoa">Reference number <span class="normal-case tracking-normal">(optional)</span></span>
               <input type="text" name="payment_reference"
                 class="mt-2 w-full rounded-2xl border-2 border-line px-4 py-3 font-mono focus:border-green focus:outline-none" placeholder="e.g. 1234 567 890123">
             </label>

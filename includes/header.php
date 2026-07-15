@@ -60,6 +60,7 @@ tailwind.config = {
            class="h-11 w-auto sm:h-12">
     </a>
     <nav class="hidden items-center gap-6 text-sm font-medium md:flex">
+      <a href="index.php#dates" class="hover:text-green">Dates</a>
       <a href="index.php#menu" class="hover:text-green">Menu</a>
       <a href="index.php#how" class="hover:text-green">How to order</a>
       <a href="index.php#faq" class="hover:text-green">FAQ</a>

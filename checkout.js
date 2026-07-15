@@ -273,8 +273,8 @@ function initCheckout() {
       tile.classList.toggle('cursor-not-allowed', full);
       tile.classList.toggle('cursor-pointer', !full);
       box.classList.toggle('opacity-40', full);
-      // No numbers shown to the customer — full windows just disable and grey out.
-      if (note) note.textContent = '';
+      // No numbers shown to the customer — just disabled + greyed out when full.
+      note.textContent = '';
     });
 
     if (hint) {
@@ -360,7 +360,7 @@ function initCheckout() {
       const option = form.querySelector('input[name="payment"]:checked');
       if (!option) return fail('Choose how you want to pay.');
       if (option.dataset.proof === '1') {
-        // Reference number is optional; only the screenshot is required.
+        if (field('payment_reference').length < 4) return fail('Add the payment reference number.');
         if (!form.querySelector('input[name="proof"]').files.length) return fail('Attach a screenshot of your payment.');
       }
     }
