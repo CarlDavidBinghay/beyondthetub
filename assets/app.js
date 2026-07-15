@@ -413,19 +413,33 @@ function initCheckout() {
     place.disabled = true;
     place.textContent = 'Placing your order…';
 
-    const body = new FormData(form);          // multipart — carries the screenshot too
-    body.set('csrf', csrfToken);
+    let res;
+    try {
+      const body = new FormData(form);          // multipart — carries the screenshot too
+      body.set('csrf', csrfToken);
 
-    const res = await fetch('actions/order.php', { method: 'POST', body });
-    const out = await res.json();
+      res = await fetch('actions/order.php', { method: 'POST', body });
+      let out;
+      try {
+        out = await res.json();
+      } catch (err) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || res.statusText || 'Unexpected server response.');
+      }
 
-    if (!res.ok) {
+      if (!res.ok) {
+        fail(out.error || 'We could not place the order. Try again.');
+        return;
+      }
+
+      window.location.href = out.redirect;
+    } catch (err) {
+      fail(err.message || 'We could not place the order. Try again.');
+    } finally {
+      if (res && res.ok) return;
       place.disabled = false;
       place.textContent = 'Place my order';
-      fail(out.error || 'We could not place the order. Try again.');
-      return;
     }
-    window.location.href = out.redirect;
   });
 
   show(0);

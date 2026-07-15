@@ -26,7 +26,7 @@ const ASSETS = [
     'hero'    => 'assets/brand/poster-b.png',
     'poster_a'=> 'assets/brand/poster-a.png',
     'poster_b'=> 'assets/brand/hero.png',
-    'menu'    => 'assets/brand/menu1.jpg',
+    'menu'    => 'assets/brand/menu1.png',
     'qr'      => 'assets/brand/qr.png',   // shown when someone pays online
 ];
 

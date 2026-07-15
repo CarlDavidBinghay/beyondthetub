@@ -1,5 +1,4 @@
-<?phpheader('Location: checkout.php');
-exit;
+<?php
 $pageTitle = 'Beyond The Tub';
 require __DIR__ . '/includes/header.php';
 
