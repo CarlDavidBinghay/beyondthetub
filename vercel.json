@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "routes": [
+    {
+      "src": "^/$",
+      "status": 302,
+      "dest": "/checkout.php"
+    }
+  ]
+}
