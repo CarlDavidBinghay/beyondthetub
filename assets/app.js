@@ -348,6 +348,7 @@ function initCheckout() {
     if (i === 2) {
       const option = form.querySelector('input[name="delivery"]:checked');
       if (!option) return fail('Choose delivery or pickup.');
+      if (!form.querySelector('input[name="packaging"]:checked')) return fail('Choose a packaging option.');
       if (option.dataset.address === '1') {
         if (field('address').length < 10) return fail('Add the complete address — street and barangay.');
         if (!field('city')) return fail('Choose the city or municipality.');
@@ -371,7 +372,9 @@ function initCheckout() {
     const state = await cartCall({ action: 'read' });
     const dOption = form.querySelector('input[name="delivery"]:checked');
     const pOption = form.querySelector('input[name="payment"]:checked');
+    const packOption = form.querySelector('input[name="packaging"]:checked');
     const fee = Number(dOption?.dataset.fee || 0);
+    const packFee = Number(packOption?.dataset.fee || 0);
     const hasAddress = dOption?.dataset.address === '1';
 
     const label = (el) => el?.closest('label').querySelector('.font-display')?.textContent.trim() || '—';
@@ -381,6 +384,8 @@ function initCheckout() {
 
     // Our rider's fee depends on the address, so it is agreed after — not added here.
     const feeText = hasAddress ? 'We message you the fee' : (fee > 0 ? peso(fee) : 'Free');
+    const packText = packFee > 0 ? peso(packFee) : 'Free';
+    const runningTotal = state.subtotal + fee + packFee;
 
     $('[data-review]', form).innerHTML = `
       <div class="space-y-1 border-b-2 border-dashed border-line pb-4">
@@ -392,8 +397,9 @@ function initCheckout() {
       </div>
       <div class="space-y-1 py-4">
         <div class="flex justify-between"><span class="text-cocoa">Subtotal</span><span>${state.subtotal_f}</span></div>
+        <div class="flex justify-between"><span class="text-cocoa">${label(packOption)}</span><span>${packText}</span></div>
         <div class="flex justify-between"><span class="text-cocoa">${label(dOption)}</span><span>${feeText}</span></div>
-        <div class="flex justify-between border-t-2 border-ink pt-2 text-base"><span class="font-sans font-bold">Total for the tubs</span><span>${peso(state.subtotal + fee)}</span></div>
+        <div class="flex justify-between border-t-2 border-ink pt-2 text-base"><span class="font-sans font-bold">Total${hasAddress ? ' (before delivery)' : ''}</span><span>${peso(runningTotal)}</span></div>
       </div>
       <div class="grid gap-3 border-t-2 border-dashed border-line pt-4 sm:grid-cols-2">
         <div><p class="text-[10px] uppercase tracking-widest text-cocoa">Production date</p><p>${field('date')} · ${field('slot')}</p></div>
@@ -413,33 +419,19 @@ function initCheckout() {
     place.disabled = true;
     place.textContent = 'Placing your order…';
 
-    let res;
-    try {
-      const body = new FormData(form);          // multipart — carries the screenshot too
-      body.set('csrf', csrfToken);
+    const body = new FormData(form);          // multipart — carries the screenshot too
+    body.set('csrf', csrfToken);
 
-      res = await fetch('actions/order.php', { method: 'POST', body });
-      let out;
-      try {
-        out = await res.json();
-      } catch (err) {
-        const text = await res.text().catch(() => '');
-        throw new Error(text || res.statusText || 'Unexpected server response.');
-      }
+    const res = await fetch('actions/order.php', { method: 'POST', body });
+    const out = await res.json();
 
-      if (!res.ok) {
-        fail(out.error || 'We could not place the order. Try again.');
-        return;
-      }
-
-      window.location.href = out.redirect;
-    } catch (err) {
-      fail(err.message || 'We could not place the order. Try again.');
-    } finally {
-      if (res && res.ok) return;
+    if (!res.ok) {
       place.disabled = false;
       place.textContent = 'Place my order';
+      fail(out.error || 'We could not place the order. Try again.');
+      return;
     }
+    window.location.href = out.redirect;
   });
 
   show(0);

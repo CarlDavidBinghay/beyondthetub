@@ -119,6 +119,12 @@ const LAUNCH_STOCK = [
     'classic|1' => 20,   // Classic 12oz  → 20 tubs
 ];
 
+/** Packaging the customer picks at checkout. First one is the default. */
+const PACKAGING = [
+    'plastic' => ['label' => 'Plastic bag', 'note' => 'Simple and free.',                         'fee' => 0],
+    'thermal' => ['label' => 'Thermal bag', 'note' => 'Keep your order chilled during transport.', 'fee' => 30],
+];
+
 const PAYMENT_METHODS = [
     'online' => [
         'label'      => 'Pay online (GCash / QR)',

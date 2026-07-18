@@ -35,12 +35,14 @@ $email     = $val('email');
 $referral  = $val('referral');
 $referrer  = $val('referral_name');
 $method    = $val('delivery');
+$packaging = $val('packaging');
 $payment   = $val('payment');
 $payRef    = $val('payment_reference');
 
 $errors = [];
 
 if (!is_production_date($date))                    $errors[] = 'That production date is no longer open.';
+if (!isset(PACKAGING[$packaging]))                 $errors[] = 'Choose a packaging option.';
 if (!is_time_slot($slot))                          $errors[] = 'Pick a handover window.';
 // Someone may have taken the last place while this person was filling the form in.
 if (is_time_slot($slot) && is_production_date($date) && slot_left($date, $slot) <= 0) {
@@ -88,7 +90,8 @@ if ($errors) {
 // Totals come from the catalogue, never from the browser.
 $subtotal = cart_subtotal();
 $fee      = delivery_fee($method);
-$total    = $subtotal + $fee;
+$packFee  = packaging_fee($packaging);
+$total    = $subtotal + $fee + $packFee;
 
 // Take the stock before anything else — if someone beat us to the last tub, stop here.
 $reserve = array_map(fn($i) => ['id' => $i['id'], 'size' => $i['size'], 'qty' => $i['qty']], $items);
@@ -165,7 +168,8 @@ $order = [
         'price'   => $i['price'],
         'line'    => $i['line'],
     ], $items),
-    'totals'    => ['subtotal' => $subtotal, 'delivery' => $fee, 'total' => $total],
+    'totals'    => ['subtotal' => $subtotal, 'delivery' => $fee, 'packaging' => $packFee, 'total' => $total],
+    'packaging' => ['key' => $packaging, 'label' => PACKAGING[$packaging]['label'], 'fee' => $packFee],
 ];
 
 if (!save_order($order)) {
@@ -180,10 +184,10 @@ $_SESSION['last_order'] = $reference;
 // Answer the customer NOW — their order is saved, so confirm it instantly.
 // Anything slow (email, Google Form) happens after, where it cannot stall checkout.
 $payload = json_encode(['reference' => $reference, 'redirect' => 'confirmation.php?ref=' . $reference]);
+echo $payload;
 
 // Flush the response so the browser redirects immediately, then keep working.
 if (function_exists('fastcgi_finish_request')) {
-    echo $payload;
     session_write_close();
     fastcgi_finish_request();
 } else {
@@ -191,7 +195,6 @@ if (function_exists('fastcgi_finish_request')) {
     ignore_user_abort(true);
     header('Connection: close');
     header('Content-Length: ' . strlen($payload));
-    echo $payload;
     while (ob_get_level() > 0) {
         ob_end_flush();
     }

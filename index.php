@@ -62,10 +62,9 @@ $totalStock = array_sum(LAUNCH_STOCK);
     ?>
     <div class="mt-8 grid gap-6 <?= $stepCols ?>">
       <?php foreach ($steps as $i => [$title, $body]): ?>
-        <div class="flex flex-col rounded-3xl border-2 border-ink bg-white p-6">
+        <div class="flex items-center gap-3 rounded-3xl border-2 border-ink bg-white p-6">
           <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-ink bg-green font-mono text-sm text-white"><?= $i + 1 ?></span>
-          <h3 class="mt-3 text-balance font-display text-lg font-bold leading-snug"><?= e($title) ?></h3>
-          <p class="mt-2 text-sm leading-relaxed text-cocoa"><?= e($body) ?></p>
+          <h3 class="font-display text-lg font-bold leading-snug"><?= e($title) ?></h3>
         </div>
       <?php endforeach; ?>
     </div>

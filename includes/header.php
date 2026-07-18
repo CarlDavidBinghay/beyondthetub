@@ -49,6 +49,16 @@ tailwind.config = {
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   :focus-visible { outline: 3px solid #1f7a45; outline-offset: 2px; }
   input, textarea, select { background: #fff; }
+
+  @keyframes tubwalk {
+    0%   { transform: translateY(0)    rotate(-2deg); }
+    25%  { transform: translateY(-5px) rotate(1deg); }
+    50%  { transform: translateY(0)    rotate(-2deg); }
+    75%  { transform: translateY(-3px) rotate(2deg); }
+    100% { transform: translateY(0)    rotate(-2deg); }
+  }
+  .logo-walk { animation: tubwalk 0.8s ease-in-out infinite; transform-origin: bottom center; }
+  .logo-walk:hover { animation-duration: 0.45s; }
 </style>
 </head>
 <body class="bg-cream text-ink font-sans antialiased selection:bg-greenlt">
@@ -57,7 +67,7 @@ tailwind.config = {
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
     <a href="index.php" class="flex items-center" aria-label="<?= e(SHOP['name']) ?> — home">
       <img src="<?= e(ASSETS['logo']) ?>" alt="<?= e(SHOP['name']) ?>"
-           class="h-11 w-auto sm:h-12">
+           class="logo-walk h-11 w-auto sm:h-12">
     </a>
     <nav class="hidden items-center gap-6 text-sm font-medium md:flex">
       <a href="index.php#dates" class="hover:text-green">Dates</a>

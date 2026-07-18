@@ -55,7 +55,7 @@ const FAQS = [
         'a' => 'Keep refrigerated (do not freeze) and enjoy within 2–3 days for the best freshness, taste, and texture.',
     ],
     [
-        'q' => 'Any allergens?',
+        'q' => 'Any allergies?',
         'a' => 'Please review the ingredient list provided for each pudding before consuming.',
     ],
 ];

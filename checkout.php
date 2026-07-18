@@ -17,7 +17,7 @@ $dates = production_dates();
 <?php else: ?>
 
   <h1 class="font-display text-4xl font-bold">Finish your order</h1>
-  
+  <p class="mt-2 text-cocoa">Five steps. We only serve <?= e(SHOP['city']) ?> for this launch.</p>
 
   <ol data-steps class="mt-8 flex flex-wrap gap-2 font-mono text-xs uppercase tracking-widest">
     <?php foreach (['Date', 'You', 'Delivery', 'Payment', 'Review'] as $i => $label): ?>
@@ -33,7 +33,7 @@ $dates = production_dates();
              data-availability='<?= e(json_encode(slot_availability())) ?>'
              data-capacity="<?= SLOT_CAPACITY ?>">
       <h2 class="font-display text-2xl font-bold">Pick your delivery date</h2>
-      <p class="mt-1 text-sm text-cocoa"></p>
+      <p class="mt-1 text-sm text-cocoa">These are the only dates we are cooking for. Times in <?= e(SHOP['timezone']) ?>.</p>
 
       <?php if (!$dates): ?>
         <p class="mt-6 rounded-2xl border-2 border-jam px-5 py-4 text-sm text-jam">
@@ -60,7 +60,8 @@ $dates = production_dates();
           <button type="button" data-more-dates class="mt-3 font-mono text-xs uppercase tracking-widest text-green underline underline-offset-4">More dates</button>
         <?php endif; ?>
 
-        <h3 class="mt-8 font-display text-xl font-bold">Pick a handover window</h3>
+        <h3 class="mt-8 font-display text-lg font-bold">Pick a handover window</h3>
+        <p class="mt-1 text-sm text-cocoa" data-slot-hint>Choose a date first — we only show windows that still have room.</p>
 
         <div class="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-4" data-slots>
           <?php foreach (TIME_SLOTS as $slot): ?>
@@ -120,7 +121,7 @@ $dates = production_dates();
     <!-- 3. Delivery or pickup -->
     <section data-panel="2" class="rounded-3xl border-2 border-ink bg-white p-6 md:p-8">
       <h2 class="font-display text-2xl font-bold">Delivery or pickup?</h2>
-  
+      <p class="mt-1 text-sm text-cocoa">We only serve <?= e(SHOP['city']) ?> for this launch.</p>
 
       <div class="mt-6 space-y-3">
         <?php foreach (DELIVERY_METHODS as $key => $m): ?>
@@ -149,6 +150,26 @@ $dates = production_dates();
             </span>
           </label>
         <?php endforeach; ?>
+      </div>
+
+      <!-- Packaging -->
+      <div class="mt-8 border-t-2 border-dashed border-line pt-6">
+        <h3 class="font-display text-xl font-bold">Packaging</h3>
+        <div class="mt-3 space-y-3">
+          <?php foreach (PACKAGING as $key => $p): ?>
+            <label class="block cursor-pointer">
+              <input type="radio" name="packaging" value="<?= e($key) ?>" data-fee="<?= (int)$p['fee'] ?>"
+                     class="peer sr-only" required <?= $key === array_key_first(PACKAGING) ? 'checked' : '' ?>>
+              <span class="flex items-start justify-between gap-4 rounded-2xl border-2 border-line px-5 py-4 peer-checked:border-ink peer-checked:bg-greenlt">
+                <span>
+                  <span class="block font-display text-lg font-bold"><?= e($p['label']) ?></span>
+                  <span class="mt-1 block text-xs text-cocoa"><?= e($p['note']) ?></span>
+                </span>
+                <span class="whitespace-nowrap font-mono text-sm"><?= $p['fee'] > 0 ? '+' . money($p['fee']) : 'Free' ?></span>
+              </span>
+            </label>
+          <?php endforeach; ?>
+        </div>
       </div>
 
       <!-- Delivery-only details (our rider) -->

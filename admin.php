@@ -655,7 +655,7 @@ $dates  = $authed ? production_dates() : [];
 
             <div>
               <p class="font-mono text-xs uppercase tracking-widest text-cocoa"><?= !empty($o['delivery']['is_pickup']) ? 'Pickup' : 'Deliver to' ?></p>
-              <p><?= e($o['delivery']['label']) ?></p>
+              <p><?= e($o['delivery']['label']) ?><?php if (!empty($o['packaging']['label'])): ?> · <?= e($o['packaging']['label']) ?><?php endif; ?></p>
               <?php if (empty($o['delivery']['is_pickup'])): ?>
                 <p class="text-cocoa"><?= nl2br(e($o['delivery']['address'])) ?>, <?= e($o['delivery']['city']) ?></p>
                 <p class="text-cocoa">Landmark: <?= e($o['delivery']['landmark']) ?></p>

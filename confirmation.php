@@ -24,7 +24,7 @@ $mine  = ($_SESSION['last_order'] ?? null) === $ref;
     <span class="mt-4 inline-block rounded-full border-2 border-ink bg-green px-4 py-1.5 font-mono text-xs uppercase tracking-widest text-white">
       <?= $isCod ? 'Order confirmed · pay on handover' : 'Payment received · we’re checking it' ?>
     </span>
-    <h1 class="mt-4 font-display text-4xl font-bold leading-tight">Thank You, <?= e($order['customer']['name']) ?>.</h1>
+    <h1 class="mt-4 font-display text-4xl font-bold leading-tight">Salamat, <?= e($order['customer']['name']) ?>.</h1>
     <p class="mx-auto mt-3 max-w-md text-cocoa">
       Your tubs are booked for <strong><?= e($order['schedule']['date_label']) ?></strong>, <?= e($order['schedule']['slot']) ?>.
       We will message you on the day.
@@ -70,6 +70,12 @@ $mine  = ($_SESSION['last_order'] ?? null) === $ref;
 
     <div class="mt-2 space-y-1.5 border-t-2 border-dashed border-line pt-4 font-mono text-sm">
       <div class="flex justify-between"><span class="text-cocoa">Subtotal</span><span><?= money($order['totals']['subtotal']) ?></span></div>
+      <?php if (!empty($order['packaging']['label'])): ?>
+        <div class="flex justify-between">
+          <span class="text-cocoa"><?= e($order['packaging']['label']) ?></span>
+          <span><?= ($order['totals']['packaging'] ?? 0) > 0 ? money($order['totals']['packaging']) : 'Free' ?></span>
+        </div>
+      <?php endif; ?>
       <div class="flex justify-between">
         <span class="text-cocoa"><?= e($order['delivery']['label']) ?></span>
         <span><?= $order['totals']['delivery'] > 0 ? money($order['totals']['delivery']) : 'Free' ?></span>

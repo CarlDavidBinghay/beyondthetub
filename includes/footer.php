@@ -1,19 +1,18 @@
 
 <footer class="mt-24 border-t-2 border-ink">
-  <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-3">
-    <div>
+  <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 text-center md:grid-cols-3">
+    <div class="flex flex-col items-center">
       <img src="<?= e(ASSETS['logo']) ?>" alt="<?= e(SHOP['name']) ?>" class="h-16 w-auto">
-      <p class="mt-4 max-w-xs text-sm text-cocoa"><??> Freshly made in every batch, layered with quality ingredients, and prepared with care for the best taste in every spoonful.</p>
+      <p class="mt-4 max-w-xs text-sm text-cocoa">Freshly made in every batch, layered with quality ingredients, and prepared with care for the best taste in every spoonful.</p>
     </div>
     <div class="text-sm">
       <p class="font-mono text-xs uppercase tracking-widest text-cocoa">Find us</p>
       <ul class="mt-3 space-y-1.5">
         <li><a class="underline decoration-green decoration-2 underline-offset-4 hover:text-green" href="<?= e(SHOP['ig_url']) ?>" target="_blank" rel="noopener">@<?= e(SHOP['instagram']) ?></a></li>
-        <li><a class="underline decoration-green decoration-2 underline-offset-4 hover:text-green" href="mailto:<?= e(SHOP['email']) ?>"><?= e(SHOP['email']) ?></a></li>        <li </li>
+        <li><a class="underline decoration-green decoration-2 underline-offset-4 hover:text-green" href="mailto:<?= e(SHOP['email']) ?>"><?= e(SHOP['email']) ?></a></li>
       </ul>
     </div>
     <div class="text-sm">
-    
     </div>
   </div>
   <div class="border-t border-line py-5 text-center font-mono text-xs text-cocoa">

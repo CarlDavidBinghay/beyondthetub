@@ -193,6 +193,11 @@ function delivery_fee(string $method): float
     return (float)(DELIVERY_METHODS[$method]['fee'] ?? 0);
 }
 
+function packaging_fee(string $key): float
+{
+    return (float)(PACKAGING[$key]['fee'] ?? 0);
+}
+
 /* -------------------------------------------------- production dates */
 
 /* -------------------------------------------------- dates (two lists) */
